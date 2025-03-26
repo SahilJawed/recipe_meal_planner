@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'ThemeProvider.dart';
 import 'recipe_provider.dart';
 import 'add_recipe_screen.dart';
 import 'settings.dart';
 import 'favorites.dart';
+import 'recipedetailscreen.dart'; // Add this import
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,6 +90,14 @@ class HomeScreen extends StatelessWidget {
                     );
                   },
                 ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RecipeDetailScreen(recipe: recipe),
+                    ),
+                  );
+                },
               );
             },
           );
@@ -114,23 +124,30 @@ class AppDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          DrawerHeader(
+          Container(
+            height: 100,
             decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-            child: const Text(
-              'Recipe App',
-              style: TextStyle(color: Colors.white, fontSize: 24),
+            child: Center(
+              child: Text(
+                'Recipe App',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           ListTile(
             leading: const Icon(Icons.home),
-            title: const Text('Home'),
+            title: Text('Home', style: GoogleFonts.poppins(fontSize: 16)),
             onTap: () {
               Navigator.pop(context);
             },
           ),
           ListTile(
             leading: const Icon(Icons.favorite),
-            title: const Text('Favorites'),
+            title: Text('Favorites', style: GoogleFonts.poppins(fontSize: 16)),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -141,7 +158,7 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
+            title: Text('Settings', style: GoogleFonts.poppins(fontSize: 16)),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
