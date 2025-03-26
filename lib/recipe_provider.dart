@@ -14,11 +14,11 @@ class RecipeProvider with ChangeNotifier {
       _recipes.where((recipe) => recipe['isFavorite'] == 1).toList();
 
   RecipeProvider() {
-    loadRecipes(); // Load once during initialization
+    loadRecipes();
   }
 
   Future<void> loadRecipes() async {
-    if (_isLoading) return; // Prevent concurrent loads
+    if (_isLoading) return;
     _isLoading = true;
     _error = null;
     notifyListeners();
