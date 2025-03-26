@@ -1,0 +1,51 @@
+import 'package:flutter/material.dart';
+import 'package:recipe_meal_planner/app_drawer.dart';
+import 'package:provider/provider.dart';
+import 'recipe_provider.dart';
+import 'add_recipe_screen.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final recipeProvider = Provider.of<RecipeProvider>(context);
+
+    return Scaffold(
+      appBar: AppBar(title: Text("Recipe Book")),
+      drawer: AppDrawer(), // Add the drawer here
+      body: ListView.builder(
+        itemCount: recipeProvider.recipes.length,
+        itemBuilder: (context, index) {
+          final recipe = recipeProvider.recipes[index];
+          return ListTile(
+            title: Text(recipe['title']),
+            subtitle: Text(recipe['ingredients']),
+            trailing: IconButton(
+              icon: Icon(
+                recipe['isFavorite'] == 1
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: recipe['isFavorite'] == 1 ? Colors.red : null,
+              ),
+              onPressed: () {
+                recipeProvider.toggleFavorite(
+                  recipe['id'],
+                  recipe['isFavorite'] == 0,
+                );
+              },
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed:
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AddRecipeScreen()),
+            ),
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}

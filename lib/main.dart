@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'ThemeProvider.dart'; // Add this import
 import 'recipe_provider.dart';
 import 'add_recipe_screen.dart';
+import 'settings.dart'; // Import the separate SettingsScreen.dart
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final prefs = await SharedPreferences.getInstance();
+  final isDarkMode = prefs.getBool('darkMode') ?? false;
+
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => RecipeProvider()..loadRecipes(),
-      child: RecipeApp(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => RecipeProvider()..loadRecipes(),
+        ),
+        ChangeNotifierProvider(create: (context) => ThemeProvider(isDarkMode)),
+      ],
+      child: const RecipeApp(),
     ),
   );
 }
@@ -17,10 +30,14 @@ class RecipeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Recipe App',
-      theme: ThemeData(primarySwatch: Colors.teal),
-      home: HomeScreen(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          title: 'Recipe App',
+          theme: themeProvider.currentTheme,
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }
@@ -33,7 +50,8 @@ class HomeScreen extends StatelessWidget {
     final recipeProvider = Provider.of<RecipeProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text("Recipe Book")),
+      appBar: AppBar(title: const Text("Recipe Book")),
+      drawer: const AppDrawer(),
       body: ListView.builder(
         itemCount: recipeProvider.recipes.length,
         itemBuilder: (context, index) {
@@ -62,9 +80,49 @@ class HomeScreen extends StatelessWidget {
         onPressed:
             () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => AddRecipeScreen()),
+              MaterialPageRoute(builder: (context) => const AddRecipeScreen()),
             ),
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class AppDrawer extends StatelessWidget {
+  const AppDrawer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+            child: const Text(
+              'Recipe App',
+              style: TextStyle(color: Colors.white, fontSize: 24),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Home'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Settings'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
