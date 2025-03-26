@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'db_helper.dart';
+import 'recipedetailscreen.dart';
 
 class RecipeProvider with ChangeNotifier {
   List<Map<String, dynamic>> _recipes = [];
@@ -14,11 +15,11 @@ class RecipeProvider with ChangeNotifier {
       _recipes.where((recipe) => recipe['isFavorite'] == 1).toList();
 
   RecipeProvider() {
-    loadRecipes(); // Load once during initialization
+    loadRecipes();
   }
 
   Future<void> loadRecipes() async {
-    if (_isLoading) return; // Prevent concurrent loads
+    if (_isLoading) return;
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -41,7 +42,7 @@ class RecipeProvider with ChangeNotifier {
       print('Adding recipe: $recipe');
       await DatabaseHelper.instance.addRecipe(recipe);
       print('Recipe added successfully');
-      await loadRecipes(); // Refresh the list after adding
+      await loadRecipes();
     } catch (e) {
       print('Error adding recipe: $e');
       rethrow;
@@ -52,7 +53,7 @@ class RecipeProvider with ChangeNotifier {
     try {
       print('Toggling favorite for id $id to $isFavorite');
       await DatabaseHelper.instance.updateFavorite(id, isFavorite ? 1 : 0);
-      await loadRecipes(); // Refresh the list after toggling
+      await loadRecipes();
     } catch (e) {
       print('Error toggling favorite: $e');
       rethrow;

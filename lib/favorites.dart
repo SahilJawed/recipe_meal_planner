@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'recipe_provider.dart';
+import 'recipedetailscreen.dart'; // Add this import
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -42,6 +43,14 @@ class FavoritesScreen extends StatelessWidget {
                     recipeProvider.toggleFavorite(recipe['id'], false);
                   },
                 ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RecipeDetailScreen(recipe: recipe),
+                    ),
+                  );
+                },
               );
             },
           );
