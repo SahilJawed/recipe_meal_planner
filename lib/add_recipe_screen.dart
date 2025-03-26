@@ -19,40 +19,65 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
 
     return Scaffold(
-      appBar: AppBar(title: Text("Add Recipe")),
+      appBar: AppBar(title: const Text("Add Recipe")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: _titleController,
-              decoration: InputDecoration(labelText: "Title"),
+              decoration: const InputDecoration(labelText: "Title"),
             ),
             TextField(
               controller: _ingredientsController,
-              decoration: InputDecoration(labelText: "Ingredients"),
+              decoration: const InputDecoration(labelText: "Ingredients"),
             ),
             TextField(
               controller: _stepsController,
-              decoration: InputDecoration(labelText: "Steps"),
+              decoration: const InputDecoration(labelText: "Steps"),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                final recipe = {
-                  'title': _titleController.text,
-                  'ingredients': _ingredientsController.text,
-                  'steps': _stepsController.text,
-                  'isFavorite': 0,
-                };
-                recipeProvider.addRecipe(recipe);
-                Navigator.pop(context);
+              onPressed: () async {
+                final title = _titleController.text.trim();
+                final ingredients = _ingredientsController.text.trim();
+                final steps = _stepsController.text.trim();
+
+                if (title.isEmpty || ingredients.isEmpty || steps.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill in all fields')),
+                  );
+                  return;
+                }
+
+                try {
+                  final recipe = {
+                    'title': title,
+                    'ingredients': ingredients,
+                    'steps': steps,
+                    'isFavorite': 0,
+                  };
+                  await recipeProvider.addRecipe(recipe);
+                  Navigator.pop(context);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error adding recipe: $e')),
+                  );
+                }
               },
-              child: Text("Add Recipe"),
+              child: const Text("Add Recipe"),
             ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _ingredientsController.dispose();
+    _stepsController.dispose();
+    super.dispose();
   }
 }
