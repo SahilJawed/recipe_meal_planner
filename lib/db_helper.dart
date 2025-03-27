@@ -20,35 +20,119 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     print('Database path: $path');
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 3, // Increment the version to trigger onUpgrade
+      onCreate: _createDB,
+      onUpgrade: _upgradeDB,
+    );
   }
 
   Future _createDB(Database db, int version) async {
-    print('Creating database table...');
+    print('Creating database tables...');
+    await db.execute('''
+    CREATE TABLE users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL
+    )
+    ''');
+
     await db.execute('''
     CREATE TABLE recipes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      userId INTEGER NOT NULL,
       title TEXT NOT NULL,
       ingredients TEXT NOT NULL,
       steps TEXT NOT NULL,
-      isFavorite INTEGER NOT NULL DEFAULT 0
+      isFavorite INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (userId) REFERENCES users (id)
     )
     ''');
-    print('Table created');
+    print('Tables created');
   }
 
-  Future<List<Map<String, dynamic>>> getRecipes() async {
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    print('Upgrading database from version $oldVersion to $newVersion...');
+    if (oldVersion < 2) {
+      // Add the users table if it doesn't exist (from previous migration)
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL
+      )
+      ''');
+      print('Users table created during upgrade');
+    }
+    if (oldVersion < 3) {
+      // Add the userId column to the recipes table
+      await db.execute('''
+      ALTER TABLE recipes ADD COLUMN userId INTEGER NOT NULL DEFAULT 0
+      ''');
+      print('Added userId column to recipes table');
+      // Note: You can't add a FOREIGN KEY constraint to an existing table in SQLite.
+      // If you need the FOREIGN KEY, you'll need to recreate the table (see below).
+    }
+  }
+
+  Future<int> createUser(String username, String email, String password) async {
     final db = await database;
-    print('Fetching recipes from database...');
-    final result = await db.query('recipes');
+    final data = {'username': username, 'email': email, 'password': password};
+    print('Creating user: $data');
+    final id = await db.insert('users', data);
+    print('User created with id: $id');
+    return id;
+  }
+
+  Future<Map<String, dynamic>?> getUser(String email, String password) async {
+    final db = await database;
+    print('Fetching user with email: $email');
+    final result = await db.query(
+      'users',
+      where: 'email = ? AND password = ?',
+      whereArgs: [email, password],
+    );
+    final user = result.isNotEmpty ? result.first : null;
+    print('User fetched: $user');
+    return user;
+  }
+
+  Future<bool> doesEmailExist(String email) async {
+    final db = await database;
+    final result = await db.query(
+      'users',
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+    return result.isNotEmpty;
+  }
+
+  Future<List<Map<String, dynamic>>> getRecipes(int userId) async {
+    final db = await database;
+    print('Fetching recipes for userId: $userId');
+    final result = await db.query(
+      'recipes',
+      where: 'userId = ?',
+      whereArgs: [userId],
+    );
     print('Recipes fetched: $result');
     return result;
   }
 
-  Future<void> addRecipe(Map<String, dynamic> recipe) async {
+  Future<void> addRecipe(int userId, Map<String, dynamic> recipe) async {
     final db = await database;
-    print('Inserting recipe: $recipe');
-    await db.insert('recipes', recipe);
+    final recipeData = {
+      'userId': userId,
+      'title': recipe['title'],
+      'ingredients': recipe['ingredients'],
+      'steps': recipe['steps'],
+      'isFavorite': recipe['isFavorite'] ?? 0,
+    };
+    print('Inserting recipe: $recipeData');
+    await db.insert('recipes', recipeData);
     print('Recipe inserted');
   }
 
@@ -62,5 +146,20 @@ class DatabaseHelper {
       whereArgs: [id],
     );
     print('Favorite updated');
+  }
+
+  Future<void> deleteRecipe(int id) async {
+    final db = await database;
+    print('Deleting recipe with id: $id');
+    await db.delete('recipes', where: 'id = ?', whereArgs: [id]);
+    print('Recipe deleted');
+  }
+
+  // In DatabaseHelper
+  Future<void> deleteDatabaseFile() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'recipes.db');
+    await deleteDatabase(path);
+    print('Database deleted');
   }
 }

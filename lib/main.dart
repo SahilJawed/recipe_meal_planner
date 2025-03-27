@@ -7,13 +7,21 @@ import 'recipe_provider.dart';
 import 'add_recipe_screen.dart';
 import 'settings.dart';
 import 'favorites.dart';
-import 'recipedetailscreen.dart'; // Add this import
+import 'recipedetailscreen.dart';
+import 'signin.dart'; // Add this import
+import 'signup.dart'; // Add this import
+import 'db_helper.dart'; // Add this import
 
+// In main.dart
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Delete the database (for testing only)
+  await DatabaseHelper.instance.deleteDatabaseFile();
+
   final prefs = await SharedPreferences.getInstance();
   final isDarkMode = prefs.getBool('darkMode') ?? false;
+  final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
   runApp(
     MultiProvider(
@@ -21,13 +29,17 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => RecipeProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider(isDarkMode)),
       ],
-      child: const RecipeApp(),
+      child: RecipeApp(
+        initialRoute: isLoggedIn ? const HomeScreen() : SigninPage(),
+      ),
     ),
   );
 }
 
 class RecipeApp extends StatelessWidget {
-  const RecipeApp({super.key});
+  final Widget initialRoute;
+
+  const RecipeApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -36,20 +48,40 @@ class RecipeApp extends StatelessWidget {
         return MaterialApp(
           title: 'Recipe App',
           theme: themeProvider.currentTheme,
-          home: const HomeScreen(),
+          home: initialRoute,
+          routes: {
+            '/home': (context) => const HomeScreen(),
+            '/signin': (context) => SigninPage(),
+            '/signup': (context) => SignupPage(),
+          },
         );
       },
     );
   }
 }
 
+// Update HomeScreen to include logout functionality
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  Future<void> _logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', false);
+    Navigator.pushReplacementNamed(context, '/signin');
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Recipe Book")),
+      appBar: AppBar(
+        title: const Text("Recipe Book"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => _logout(context),
+          ),
+        ],
+      ),
       drawer: const AppDrawer(),
       body: Consumer<RecipeProvider>(
         builder: (context, recipeProvider, child) {
@@ -115,6 +147,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+// Update AppDrawer to include login state
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
@@ -143,6 +176,7 @@ class AppDrawer extends StatelessWidget {
             title: Text('Home', style: GoogleFonts.poppins(fontSize: 16)),
             onTap: () {
               Navigator.pop(context);
+              Navigator.pushNamed(context, '/home');
             },
           ),
           ListTile(
