@@ -8,12 +8,14 @@ class RecipeProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   int? _userId;
+  String _selectedPreference = 'None'; // Default preference
 
   List<Map<String, dynamic>> get recipes => List.unmodifiable(_recipes);
   bool get isLoading => _isLoading;
   String? get error => _error;
   List<Map<String, dynamic>> get favoriteRecipes =>
       _recipes.where((recipe) => recipe['isFavorite'] == 1).toList();
+  String get selectedPreference => _selectedPreference;
 
   RecipeProvider() {
     _initialize();
@@ -24,7 +26,7 @@ class RecipeProvider with ChangeNotifier {
     _userId = prefs.getInt('userId');
     print('Initialized with userId: $_userId');
     if (_userId != null) {
-      await loadRecipes();
+      await loadRecipes(); // Default load of all recipes when app initializes
     }
   }
 
@@ -39,9 +41,41 @@ class RecipeProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      print('Loading recipes for userId: $_userId...');
+      print('Loading all recipes for userId: $_userId...');
       _recipes = await DatabaseHelper.instance.getRecipes(_userId!);
       print('Recipes loaded: ${_recipes.length} recipes');
+    } catch (e) {
+      print('Error loading recipes: $e');
+      _error = 'Failed to load recipes: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Load recipes by selected dietary preference
+  Future<void> loadRecipesByPreference(String preference) async {
+    if (_isLoading || _userId == null) {
+      print('Cannot load recipes: isLoading=$_isLoading, userId=$_userId');
+      return;
+    }
+
+    _isLoading = true;
+    _error = null;
+    _selectedPreference = preference; // Set the preference to the selected one
+    notifyListeners();
+
+    try {
+      print(
+        'Loading recipes for userId: $_userId with preference: $preference...',
+      );
+      _recipes = await DatabaseHelper.instance.getRecipesByPreference(
+        _userId!,
+        preference,
+      );
+      print(
+        'Recipes loaded: ${_recipes.length} recipes with preference $preference',
+      );
     } catch (e) {
       print('Error loading recipes: $e');
       _error = 'Failed to load recipes: $e';

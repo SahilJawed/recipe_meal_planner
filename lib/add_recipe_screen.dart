@@ -17,6 +17,15 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final _ingredientsController = TextEditingController();
   final _stepsController = TextEditingController();
 
+  String _selectedPreference = 'None';
+  final List<String> _dietaryOptions = [
+    'None',
+    'Vegetarian',
+    'Vegan',
+    'Gluten-Free',
+    'Keto',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
@@ -46,7 +55,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Recipe Title Input
                 _buildTextField(
                   controller: _titleController,
                   label: 'Recipe Title',
@@ -59,10 +67,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 20),
-
-                // Ingredients Input
                 _buildTextField(
                   controller: _ingredientsController,
                   label: 'Ingredients',
@@ -76,10 +81,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 20),
-
-                // Cooking Steps Input
                 _buildTextField(
                   controller: _stepsController,
                   label: 'Cooking Steps',
@@ -93,10 +95,29 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 30),
-
-                // Add Recipe Button
+                DropdownButtonFormField<String>(
+                  value: _selectedPreference,
+                  items:
+                      _dietaryOptions
+                          .map(
+                            (option) => DropdownMenuItem(
+                              value: option,
+                              child: Text(option),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPreference = value!;
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Meal Preference',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
@@ -106,7 +127,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                           'ingredients': _ingredientsController.text.trim(),
                           'steps': _stepsController.text.trim(),
                           'isFavorite': 0,
+                          'preference': _selectedPreference,
                         };
+
                         await recipeProvider.addRecipe(recipe);
                         Navigator.pop(context);
                       } catch (e) {

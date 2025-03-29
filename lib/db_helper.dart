@@ -47,7 +47,9 @@ class DatabaseHelper {
       ingredients TEXT NOT NULL,
       steps TEXT NOT NULL,
       isFavorite INTEGER NOT NULL DEFAULT 0,
+      PREFERENCE TEXT NOT NULL,
       FOREIGN KEY (userId) REFERENCES users (id)
+      
     )
     ''');
     print('Tables created');
@@ -124,12 +126,14 @@ class DatabaseHelper {
 
   Future<void> addRecipe(int userId, Map<String, dynamic> recipe) async {
     final db = await database;
+
     final recipeData = {
       'userId': userId,
       'title': recipe['title'],
       'ingredients': recipe['ingredients'],
       'steps': recipe['steps'],
       'isFavorite': recipe['isFavorite'] ?? 0,
+      'preference': recipe['preference'],
     };
     print('Inserting recipe: $recipeData');
     await db.insert('recipes', recipeData);
@@ -161,5 +165,22 @@ class DatabaseHelper {
     final path = join(dbPath, 'recipes.db');
     await deleteDatabase(path);
     print('Database deleted');
+  }
+
+  Future<List<Map<String, dynamic>>> getRecipesByPreference(
+    int userId,
+    String preference,
+  ) async {
+    final db = await database;
+    print('Fetching recipes for userId: $userId with preference: $preference');
+    final result = await db.query(
+      'recipes',
+      where: 'userId = ? AND preference = ?',
+      whereArgs: [userId, preference],
+    );
+    print(
+      'Recipes fetched with preference: $preference, count: ${result.length}',
+    );
+    return result;
   }
 }

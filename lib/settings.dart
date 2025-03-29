@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ThemeProvider.dart';
+import 'recipe_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -40,39 +41,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notifications', _notificationsEnabled);
     await prefs.setString('dietaryPreference', _dietaryPreference);
-  }
 
-  Future<void> _resetSettings() async {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    await themeProvider.resetToDefault(); // This should now work
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('notifications');
-    await prefs.remove('dietaryPreference');
-
-    setState(() {
-      _notificationsEnabled = true;
-      _dietaryPreference = 'None';
-    });
-
-    ScaffoldMessenger.of(
+    // Notify RecipeProvider to load recipes for the selected preference
+    Provider.of<RecipeProvider>(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Settings reset to default')));
+      listen: false,
+    ).loadRecipesByPreference(_dietaryPreference);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('App Settings'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _resetSettings,
-            tooltip: 'Reset to Default Settings',
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('App Settings')),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

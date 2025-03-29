@@ -1,12 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_meal_planner/app_drawer.dart';
 import 'recipe_provider.dart';
 import 'add_recipe_screen.dart';
 import 'recipedetailscreen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _selectedPreference = 'None'; // ✅ Defined and initialized
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserPreference();
+  }
+
+  Future<void> _loadUserPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _selectedPreference = prefs.getString('mealPreference') ?? 'None';
+    });
+  }
 
   Future<void> _logout(BuildContext context) async {
     final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
@@ -47,14 +68,22 @@ class HomeScreen extends StatelessWidget {
               ),
             );
           }
-          if (recipeProvider.recipes.isEmpty) {
-            return const Center(child: Text('No recipes yet. Add one!'));
+
+          // ✅ Filter recipes based on user preference
+          final filteredRecipes =
+              recipeProvider.recipes.where((recipe) {
+                return _selectedPreference == 'None' ||
+                    (recipe['preference'] == _selectedPreference);
+              }).toList();
+
+          if (filteredRecipes.isEmpty) {
+            return const Center(child: Text('No matching recipes found.'));
           }
 
           return ListView.builder(
-            itemCount: recipeProvider.recipes.length,
+            itemCount: filteredRecipes.length,
             itemBuilder: (context, index) {
-              final recipe = recipeProvider.recipes[index];
+              final recipe = filteredRecipes[index];
               return ListTile(
                 title: Text(recipe['title']),
                 subtitle: Column(
